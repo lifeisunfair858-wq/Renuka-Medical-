@@ -22,7 +22,7 @@ A complete pharmacy inventory management system with cloud sync and offline supp
 - html2pdf (PDF generation)
 
 ## Live Demo
-[https://YOUR_USERNAME.github.io/renuka-medical/](https://YOUR_USERNAME.github.io/renuka-medical/)
+[https://YOUR_USERNAME.github.io/renuka-medical/](https://lifeisunfair858.github.io/renuka-medical/)
 
 ## Setup
 1. Clone the repository
