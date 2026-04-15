@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Renuka Medical — Complete Pharmacy System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2334;
+    --border: #2a3045;
+    --accent: #4ade80;
+    --accent2: #22d3ee;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --purple: #a78bfa;
+    --pink: #f472b6;
+    --text: #f0f4ff;
+    --muted: #7a85a3;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
+
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 24px 0; position: fixed;
+    height: 100vh; z-index: 100;
+  }
+  .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); }
+  .logo-name { font-family: var(--font-head); font-size: 17px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo-sub { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .sync-status { display: flex; align-items: center; gap: 6px; font-size: 10px; margin-top: 6px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .sync-dot.online { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .sync-dot.syncing { background: var(--warn); animation: pulse 1s infinite; }
+  .sync-dot.offline { background: var(--danger); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    font-size: 13.5px; color: var(--muted); transition: all 0.15s;
+    margin-bottom: 2px; font-weight: 500;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(74,222,128,0.12); color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .main { margin-left: 220px; flex: 1; padding: 28px 32px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .page-title { font-family: var(--font-head); font-size: 22px; font-weight: 700; }
+
+  .btn {
+    padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #0a0f0a; }
+  .btn-primary:hover { background: #6ee7a0; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-ai { background: linear-gradient(135deg, #22d3ee22, #4ade8022); color: var(--accent2); border: 1px solid #22d3ee44; }
+  .btn-ai:hover { background: linear-gradient(135deg, #22d3ee33, #4ade8033); }
+  .btn-sell { background: rgba(167,139,250,0.15); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+  .btn-sell:hover { background: rgba(167,139,250,0.25); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.green::before { background: var(--accent); }
+  .stat-card.cyan::before { background: var(--accent2); }
+  .stat-card.warn::before { background: var(--warn); }
+  .stat-card.danger::before { background: var(--danger); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-head); font-size: 28px; font-weight: 700; }
+  .stat-card.green .stat-value { color: var(--accent); }
+  .stat-card.cyan .stat-value { color: var(--accent2); }
+  .stat-card.warn .stat-value { color: var(--warn); }
+  .stat-card.danger .stat-value { color: var(--danger); }
+  .stat-card.purple .stat-value { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .sales-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
+
+  .toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .search-wrap input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 14px 9px 36px; color: var(--text);
+    font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; }
+  select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 14px; color: var(--text); font-family: var(--font-body); font-size: 13px; outline: none; cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th {
+    padding: 12px 16px; text-align: left; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; background: var(--surface2);
+  }
+  td { padding: 12px 16px; font-size: 13.5px; border-bottom: 1px solid rgba(42,48,69,0.5); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .product-name { font-weight: 500; color: var(--text); }
+  .product-company { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: rgba(74,222,128,0.12); color: var(--accent); }
+  .badge-warn { background: rgba(251,191,36,0.12); color: var(--warn); }
+  .badge-danger { background: rgba(248,113,113,0.12); color: var(--danger); }
+  .badge-cyan { background: rgba(34,211,238,0.12); color: var(--accent2); }
+  .badge-purple { background: rgba(167,139,250,0.12); color: var(--purple); }
+
+  .shelf-tag {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 24px; border-radius: 6px; background: var(--surface2);
+    border: 1px solid var(--border); font-size: 12px; font-weight: 600;
+    color: var(--accent2); font-family: var(--font-head); letter-spacing: 0.5px; padding: 0 6px;
+  }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 560px; max-height: 90vh; overflow-y: auto; padding: 28px; position: relative; }
+  .modal-sm { width: 380px; }
+  .modal-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .modal-close { position: absolute; top: 20px; right: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 14px; }
+  .modal-close:hover { color: var(--text); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.span2 { grid-column: span 2; }
+  label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; }
+  input, textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color 0.15s; width: 100%; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  .ai-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; }
+  .ai-upload-area:hover { border-color: var(--accent2); background: rgba(34,211,238,0.03); }
+  .ai-upload-area.dragging { border-color: var(--accent2); background: rgba(34,211,238,0.06); }
+  .ai-icon { font-size: 36px; margin-bottom: 10px; }
+  .ai-upload-text { font-size: 14px; color: var(--muted); }
+  .ai-upload-text strong { color: var(--accent2); }
+  .ai-result { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 12px; font-size: 13px; color: var(--muted); display: none; max-height: 200px; overflow-y: auto; }
+  .ai-result.show { display: block; }
+  .ai-result pre { white-space: pre-wrap; word-break: break-word; color: var(--accent); font-family: var(--font-body); font-size: 12.5px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 10px; display: none; }
+  .progress-bar.show { display: block; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 2px; animation: progress 1.5s ease-in-out infinite; width: 40%; }
+  @keyframes progress { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+  .alert-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+  .alert-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; min-width: 200px; flex: 1; }
+  .alert-card.warn { border-left: 3px solid var(--warn); }
+  .alert-card.danger { border-left: 3px solid var(--danger); }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .alert-dot.warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .alert-dot.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger); animation: pulse 1.5s infinite; }
+  .alert-info { flex: 1; }
+  .alert-name { font-size: 13px; font-weight: 500; }
+  .alert-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .sale-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(42,48,69,0.5); }
+  .sale-row:last-child { border-bottom: none; }
+  .sale-name { font-size: 13px; font-weight: 500; }
+  .sale-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sale-amount { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--accent); }
+
+  .sell-product-info { background: var(--surface2); border-radius: 10px; padding: 14px; margin-bottom: 20px; }
+  .sell-product-name { font-family: var(--font-head); font-size: 16px; font-weight: 700; }
+  .sell-product-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .sell-stock { font-size: 13px; margin-top: 8px; }
+  .sell-stock span { color: var(--accent); font-weight: 600; }
+
+  .empty-state { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--accent); }
+  .toast.error { border-left: 3px solid var(--danger); }
+
+  .api-banner { background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(74,222,128,0.08)); border: 1px solid rgba(34,211,238,0.25); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  .api-banner a { color: var(--accent2); text-decoration: none; }
+
+  .section-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  .loading-overlay { position: fixed; inset: 0; background: rgba(15,17,23,0.85); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .loading-overlay.hidden { display: none; }
+  .loading-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--font-head); font-size: 16px; color: var(--muted); }
+
+  .bill-content { background: white; color: black; padding: 20px; border-radius: 12px; }
+
+  .pdf-export { background: white !important; color: black !important; padding: 20px; font-family: Arial, sans-serif; }
+  .pdf-export * { color: black !important; }
+  .pdf-export h2 { color: #0f1117 !important; }
+  .pdf-export table { border-collapse: collapse; width: 100%; }
+  .pdf-export th { background: #f0f0f0 !important; color: black !important; padding: 10px; text-align: left; border: 1px solid #ddd; }
+  .pdf-export td { padding: 8px; border: 1px solid #ddd; color: black !important; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 16px; padding-bottom: 80px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .sales-stats { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.span2 { grid-column: span 1; }
+    .modal { width: 95vw; padding: 20px; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    .mobile-nav { display: flex !important; }
+  }
+  .mobile-nav { display: none; justify-content: space-around; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 100; padding: 8px 0 12px; }
+  .mobile-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: var(--muted); cursor: pointer; padding: 4px 12px; }
+  .mobile-nav-item.active { color: var(--accent); }
+  .mobile-nav-item .icon { font-size: 20px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Connecting to Supabase...</div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-name">Renuka Medical</div>
+      <div class="logo-sub">Complete System v2</div>
+      <div class="sync-status">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncText" style="color:var(--muted);font-size:10px;">Connecting...</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showPage('inventory')"><span class="icon">💊</span> Inventory</div>
+      <div class="nav-item" onclick="showPage('sales')"><span class="icon">📊</span> Sales Today</div>
+      <div class="nav-item" onclick="showPage('history')"><span class="icon">📈</span> Sales History</div>
+      <div class="nav-item" onclick="showPage('expiry')"><span class="icon">⏰</span> Expiry Alerts</div>
+      <div class="nav-item" onclick="showPage('shelf')"><span class="icon">🗄️</span> Shelf View</div>
+      <div class="nav-item" onclick="showPage('reports')"><span class="icon">📑</span> Reports</div>
+      <div class="nav-item" onclick="showPage('settings')"><span class="icon">⚙️</span> Settings</div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- INVENTORY PAGE -->
+    <div id="page-inventory">
+      <div class="topbar">
+        <div class="page-title">💊 Inventory</div>
+        <div class="topbar-actions">
+          <button class="btn btn-ai" onclick="openAiModal()">✨ AI Bulk Entry</button>
+          <button class="btn btn-primary" onclick="openAddModal()">+ Add Product</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card green"><div class="stat-label">Total Products</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">in inventory</div></div>
+        <div class="stat-card warn"><div class="stat-label">Expiring Soon</div><div class="stat-value" id="stat-expiring">—</div><div class="stat-sub">within 60 days</div></div>
+        <div class="stat-card danger"><div class="stat-label">Expired</div><div class="stat-value" id="stat-expired">—</div><div class="stat-sub">remove from shelf</div></div>
+        <div class="stat-card cyan"><div class="stat-label">Low Stock</div><div class="stat-value" id="stat-low">—</div><div class="stat-sub">below 10 units</div></div>
+        <div class="stat-card purple"><div class="stat-label">Inventory Value</div><div class="stat-value" id="stat-value">₹0</div><div class="stat-sub">at MRP</div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search product, company, batch, shelf..." oninput="renderTable()">
+        </div>
+        <select id="filterCategory" onchange="renderTable()">
+          <option value="">All Categories</option>
+          <option>Tablet</option><option>Syrup</option><option>Injection</option>
+          <option>Capsule</option><option>Cream/Ointment</option><option>Drops</option><option>Other</option>
+        </select>
+        <select id="filterExpiry" onchange="renderTable()">
+          <option value="">All Expiry</option>
+          <option value="expired">Expired</option>
+          <option value="30">Expiring 30d</option>
+          <option value="60">Expiring 60d</option>
+          <option value="90">Expiring 90d</option>
+        </select>
+        <button class="btn btn-secondary" onclick="exportInventoryToExcel()">📊 Excel</button>
+        <button class="btn btn-secondary" onclick="exportInventoryToPDF()">📄 PDF</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th><th>Category</th><th>Batch</th><th>Expiry</th>
+              <th>Qty</th><th>Shelf</th><th>MRP</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display:none;">
+          <div class="e-icon">📦</div>
+          <p>No products found. Add your first product!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALES TODAY PAGE -->
+    <div id="page-sales" style="display:none;">
+      <div class="topbar">
+        <div class="page-title">📊 Sales Today</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" onclick="exportSalesToExcel()">📊 Export Excel</button>
+          <div id="todayDate" style="font-size:13px;color:var(--muted);"></div>
+        </div>
+      </div>
+
+      <div class="sales-stats">
+        <div class="stat-card purple"><div class="stat-label">Transactions</div><div class="stat-value" id="today-count">0</div></div>
+        <div class="stat-card green"><div class="stat-label">Revenue Today</div><div class="stat-value" id="today-revenue">₹0</div></div>
+        <div class="stat-card cyan"><div class="stat-label">Units Sold</div><div class="stat-value" id="today-units">0</div></div>
+      </div>
+
+      <div class="table-wrap">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-family:var(--font-head);font-size:14px;font-weight:700;">Today's Sales Log</div>
+        <div id="todaySalesContent" style="padding:16px 20px;"></div>
+      </div>
+    </div>
+
+    <!-- SALES HISTORY PAGE -->
+    <div id="page-history" style="display:none;">
+      <div class="topbar">
+        <div class="page-title">📈 Sales History</div>
+        <div><input type="date" id="historyDate" onchange="loadHistory()" style="padding:8px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);"></div>
+      </div>
+      <div class="sales-stats" id="historySummary"></div>
+      <div class="table-wrap"><div id="historyContent" style="padding:16px 20px;"></div></div>
+    </div>
+
+    <!-- EXPIRY PAGE -->
+    <div id="page-expiry" style="display:none;">
+      <div class="topbar">
+        <div class="page-title">⏰ Expiry Alerts</div>
+        <div><button class="btn btn-secondary" onclick="exportExpiryReport()">📄 Export Report</button></div>
+      </div>
+      <div id="expiryContent"></div>
+    </div>
+
+    <!-- SHELF PAGE -->
+    <div id="page-shelf" style="display:none;">
+      <div class="topbar"><div class="page-title">🗄️ Shelf View</div></div>
+      <div id="shelfContent"></div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div id="page-reports" style="display:none;">
+      <div class="topbar"><div class="page-title">📑 Reports & Export</div></div>
+      <div class="stats">
+        <div class="stat-card green" onclick="exportInventoryToExcel()" style="cursor:pointer;"><div class="stat-label">📊 Export</div><div class="stat-value">Excel</div></div>
+        <div class="stat-card cyan" onclick="exportInventoryToPDF()" style="cursor:pointer;"><div class="stat-label">📄 Export</div><div class="stat-value">PDF</div></div>
+        <div class="stat-card purple" onclick="exportAllData()" style="cursor:pointer;"><div class="stat-label">💾 Backup</div><div class="stat-value">JSON</div></div>
+        <div class="stat-card warn" onclick="generateLowStockAlert()" style="cursor:pointer;"><div class="stat-label">⚠️ Alert</div><div class="stat-value">Low Stock</div></div>
+        <div class="stat-card danger" onclick="clearAllData()" style="cursor:pointer;"><div class="stat-label">🗑️ Clear</div><div class="stat-value">Data</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div class="section-title">📧 Email Low Stock Alert</div>
+          <div class="form-group"><label>Email</label><input type="email" id="alertEmail" placeholder="pharmacy@example.com"></div>
+          <button class="btn btn-primary" onclick="sendLowStockEmail()" style="margin-top:12px;">Send Alert Email</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div class="section-title">📋 Quick Actions</div>
+          <button class="btn btn-secondary" onclick="window.print()" style="width:100%;margin-bottom:10px;">🖨️ Print Current View</button>
+          <button class="btn btn-secondary" onclick="exportSalesToExcel()" style="width:100%;">📊 Export Today's Sales</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="page-settings" style="display:none;">
+      <div class="topbar"><div class="page-title">⚙️ Settings</div></div>
+      <div style="max-width:480px;">
+        <div class="api-banner">🤖 Gemini AI — Get free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a></div>
+        <div class="form-group"><label>Gemini API Key</label><input type="password" id="geminiKeyInput" placeholder="AIza..."></div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Key stored locally in your browser only.</p>
+        
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
+          <div class="section-title">☁️ Supabase Connection</div>
+          <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+            <div id="supabaseStatus"></div>
+            <button class="btn btn-secondary" onclick="testSupabaseConnection()" style="margin-top:12px;">🔄 Test Connection</button>
+            <button class="btn btn-primary" onclick="manualSync()" style="margin-top:12px;margin-left:8px;">
+              🔄 Sync Now (<span id="queueCount">0</span> pending)
+            </button>
+            <p style="font-size:12px;color:var(--muted);margin-top:12px;">
+              Changes made offline are automatically synced when connection returns.
+            </p>
+          </div>
+        </div>
+        
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
+          <div class="section-title">💾 Data Management</div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="exportAllData()">📥 Backup All Data</button>
+            <button class="btn btn-danger" onclick="clearAllData()">⚠️ Clear All Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav">
+  <div class="mobile-nav-item active" onclick="showPage('inventory')"><span class="icon">💊</span>Stock</div>
+  <div class="mobile-nav-item" onclick="showPage('sales')"><span class="icon">📊</span>Today</div>
+  <div class="mobile-nav-item" onclick="showPage('history')"><span class="icon">📈</span>History</div>
+  <div class="mobile-nav-item" onclick="showPage('expiry')"><span class="icon">⏰</span>Expiry</div>
+  <div class="mobile-nav-item" onclick="showPage('reports')"><span class="icon">📑</span>Reports</div>
+  <div class="mobile-nav-item" onclick="showPage('settings')"><span class="icon">⚙</span>Settings</div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="addModalTitle">➕ Add Product</div>
+    <div class="modal-close" onclick="closeModal('addModal')">✕</div>
+    <div class="form-grid">
+      <div class="form-group span2"><label>Product Name *</label><input type="text" id="f-name"></div>
+      <div class="form-group"><label>Company</label><input type="text" id="f-company"></div>
+      <div class="form-group"><label>Category</label><select id="f-category"><option>Tablet</option><option>Syrup</option><option>Injection</option><option>Capsule</option><option>Cream/Ointment</option><option>Drops</option><option>Other</option></select></div>
+      <div class="form-group"><label>Batch</label><input type="text" id="f-batch"></div>
+      <div class="form-group"><label>Expiry (YYYY-MM)</label><input type="month" id="f-expiry"></div>
+      <div class="form-group"><label>Quantity *</label><input type="number" id="f-qty" min="0"></div>
+      <div class="form-group"><label>MRP (₹)</label><input type="number" id="f-mrp" step="0.01"></div>
+      <div class="form-group"><label>Purchase (₹)</label><input type="number" id="f-purchase" step="0.01"></div>
+      <div class="form-group"><label>Shelf</label><input type="text" id="f-shelf" placeholder="A12"></div>
+      <div class="form-group"><label>GST %</label><select id="f-gst"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="sellModal">
+  <div class="modal modal-sm">
+    <div class="modal-title">🛒 Sell Product</div>
+    <div class="modal-close" onclick="closeModal('sellModal')">✕</div>
+    <div class="sell-product-info">
+      <div class="sell-product-name" id="sell-name">—</div>
+      <div class="sell-product-meta" id="sell-meta">—</div>
+      <div class="sell-stock">Available: <span id="sell-stock">0</span> units</div>
+    </div>
+    <div class="form-group"><label>Quantity</label><input type="number" id="sell-qty" min="1" oninput="updateSellTotal()"></div>
+    <div class="form-group"><label>Selling Price (₹)</label><input type="number" id="sell-price" step="0.01" oninput="updateSellTotal()"></div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin:16px 0;display:flex;justify-content:space-between;">
+      <span>Total</span><span id="sell-total" style="font-size:20px;font-weight:700;color:var(--accent);">₹0</span>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('sellModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSell(false)">✅ Sell</button>
+      <button class="btn btn-sell" onclick="confirmSell(true)">🧾 Sell + Invoice</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="billModal">
+  <div class="modal">
+    <div class="modal-title">🧾 Invoice</div>
+    <div class="modal-close" onclick="closeModal('billModal')">✕</div>
+    <div id="billContent" class="bill-content"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="printBill()">🖨️ Print</button>
+      <button class="btn btn-primary" onclick="downloadBillPDF()">📄 Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="aiModal">
+  <div class="modal">
+    <div class="modal-title">✨ AI Bulk Scanner</div>
+    <div class="modal-close" onclick="closeModal('aiModal')">✕</div>
+    <div id="aiKeyWarning" class="api-banner" style="display:none;">⚠️ Set Gemini API key in Settings first.</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Upload invoice photo — Gemini extracts products automatically.</p>
+    <div class="ai-upload-area" id="aiDropZone" onclick="document.getElementById('aiFileInput').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+      <div class="ai-icon">🧾</div>
+      <div class="ai-upload-text"><strong>Click to upload</strong> or drag & drop</div>
+    </div>
+    <input type="file" id="aiFileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+    <div id="aiImagePreview" style="display:none;margin-bottom:12px;"><img id="aiPreviewImg" style="max-width:100%;border-radius:8px;max-height:160px;"></div>
+    <div class="progress-bar" id="aiProgress"><div class="progress-fill"></div></div>
+    <div class="ai-result" id="aiResult"><pre id="aiResultText"></pre></div>
+    <div id="aiParsedList" style="display:none;margin-top:14px;"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('aiModal')">Cancel</button>
+      <button class="btn btn-ai" id="aiScanBtn" onclick="runGeminiScan()" style="display:none;">✨ Scan</button>
+      <button class="btn btn-primary" id="aiAddBtn" onclick="addAiProducts()" style="display:none;">Add All</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================
+// SUPABASE CONFIG
+// ============================================
+const SUPABASE_URL = 'https://ymwjfbiqapldzdoofpcc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd2pmYmlxYXBsZHpkb29mcGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNDIxNDEsImV4cCI6MjA5MTgxODE0MX0.k7vtDtqg8YsLT1eEN84U4jI2kPfDgGM6WGrwJo0nJvk';
+
+// ============================================
+// STATE
+// ============================================
+let products = [];
+let sales = [];
+let editingId = null;
+let sellingProduct = null;
+let currentBill = null;
+let aiParsedProducts = [];
+let aiImageBase64 = null;
+let currentPage = 'inventory';
+let supabaseOnline = false;
+
+// ============================================
+// SYNC QUEUE FOR OFFLINE CHANGES
+// ============================================
+let syncQueue = JSON.parse(localStorage.getItem('renuka_sync_queue') || '[]');
+let isSyncing = false;
+
+function updateQueueCount() {
+  const el = document.getElementById('queueCount');
+  if (el) el.textContent = syncQueue.length;
+}
+
+async function queueForSync(operation) {
+  syncQueue.push({
+    ...operation,
+    timestamp: Date.now(),
+    id: Date.now() + '-' + Math.random().toString(36)
+  });
+  localStorage.setItem('renuka_sync_queue', JSON.stringify(syncQueue));
+  updateQueueCount();
+  console.log('📤 Queued for sync:', operation.type);
+}
+
+async function processSyncQueue() {
+  if (isSyncing || !supabaseOnline || syncQueue.length === 0) return;
+  
+  isSyncing = true;
+  setSyncStatus('syncing', `Syncing ${syncQueue.length} changes...`);
+  console.log('🔄 Processing sync queue:', syncQueue.length, 'items');
+  
+  const successfulIds = [];
+  
+  for (const op of syncQueue) {
+    try {
+      switch (op.type) {
+        case 'ADD_PRODUCT':
+        case 'UPDATE_PRODUCT':
+          const method = op.type === 'ADD_PRODUCT' ? 'POST' : 'PATCH';
+          const endpoint = op.type === 'ADD_PRODUCT' ? 'products' : `products?id=eq.${op.data.id}`;
+          await supabaseRequest(endpoint, { method, body: JSON.stringify(op.data) });
+          break;
+          
+        case 'DELETE_PRODUCT':
+          await supabaseRequest(`products?id=eq.${op.id}`, { method: 'DELETE' });
+          break;
+          
+        case 'ADD_SALE':
+          await supabaseRequest('sales', { method: 'POST', body: JSON.stringify(op.data) });
+          break;
+      }
+      successfulIds.push(op.id);
+    } catch (err) {
+      console.error('❌ Failed to sync item:', op, err);
+    }
+  }
+  
+  syncQueue = syncQueue.filter(op => !successfulIds.includes(op.id));
+  localStorage.setItem('renuka_sync_queue', JSON.stringify(syncQueue));
+  updateQueueCount();
+  
+  isSyncing = false;
+  
+  if (syncQueue.length === 0) {
+    setSyncStatus('online', 'Synced ✓');
+    showToast('✅ All changes synced to cloud!', 'success');
+  } else {
+    setSyncStatus('online', `${syncQueue.length} pending`);
+  }
+  
+  console.log('📊 Sync complete. Remaining:', syncQueue.length);
+}
+
+let connectionCheckInterval = null;
+
+function startConnectionMonitoring() {
+  if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+  
+  connectionCheckInterval = setInterval(async () => {
+    if (!supabaseOnline) {
+      try {
+        const res = await supabaseRequest('products?limit=1', {}, 3000);
+        if (res.ok) {
+          supabaseOnline = true;
+          setSyncStatus('online', 'Connected ✓');
+          updateSupabaseStatusDisplay();
+          console.log('🔗 Supabase connection restored!');
+          
+          if (syncQueue.length > 0) {
+            showToast(`📤 Syncing ${syncQueue.length} offline changes...`, 'success');
+            await processSyncQueue();
+          }
+        }
+      } catch (err) {}
+    } else if (syncQueue.length > 0 && !isSyncing) {
+      await processSyncQueue();
+    }
+  }, 5000);
+}
+
+async function manualSync() {
+  if (!supabaseOnline) {
+    showToast('❌ No internet connection', 'error');
+    return;
+  }
+  if (syncQueue.length === 0) {
+    showToast('✅ Everything is already synced!', 'success');
+    return;
+  }
+  await processSyncQueue();
+}
+
+// ============================================
+// API HELPERS
+// ============================================
+async function supabaseRequest(endpoint, options = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+      ...options,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+// ============================================
+// INIT
+// ============================================
+async function init() {
+  try {
+    setSyncStatus('syncing', 'Connecting...');
+    
+    try {
+      const productsRes = await supabaseRequest('products?order=added_at.desc');
+      if (productsRes.ok) {
+        products = await productsRes.json();
+        supabaseOnline = true;
+      } else {
+        throw new Error('Products fetch failed');
+      }
+      
+      const salesRes = await supabaseRequest('sales?order=sold_at.desc');
+      if (salesRes.ok) {
+        sales = await salesRes.json();
+      }
+      
+      setSyncStatus('online', 'Synced ✓');
+      backupToLocal();
+      
+    } catch (supabaseErr) {
+      console.warn('Supabase unavailable, using local backup:', supabaseErr);
+      loadFromLocal();
+      setSyncStatus('offline', 'Local mode');
+    }
+    
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    renderTable();
+    setTodayDate();
+    updateSupabaseStatusDisplay();
+    updateQueueCount();
+    startConnectionMonitoring();
+    
+  } catch (err) {
+    console.error('Init error:', err);
+    loadFromLocal();
+    setSyncStatus('offline', 'Offline');
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    renderTable();
+    setTodayDate();
+    startConnectionMonitoring();
+  }
+}
+
+function backupToLocal() {
+  if (products.length) localStorage.setItem('renuka_products_backup', JSON.stringify(products));
+  if (sales.length) localStorage.setItem('renuka_sales_backup', JSON.stringify(sales));
+}
+
+function loadFromLocal() {
+  const savedProducts = localStorage.getItem('renuka_products_backup');
+  const savedSales = localStorage.getItem('renuka_sales_backup');
+  
+  if (savedProducts) {
+    products = JSON.parse(savedProducts);
+  } else {
+    products = [
+      { id: 'demo1', name: 'Paracetamol 500mg', company: 'Cipla', category: 'Tablet', batch: 'P2401', expiry: '2025-12', qty: 45, mrp: 28, shelf: 'A12', added_at: new Date().toISOString() },
+      { id: 'demo2', name: 'Amoxicillin 250mg', company: 'GSK', category: 'Capsule', batch: 'AMX101', expiry: '2026-03', qty: 120, mrp: 95, shelf: 'B04', added_at: new Date().toISOString() },
+      { id: 'demo3', name: 'Cetrizine Syrup', company: 'Mankind', category: 'Syrup', batch: 'CTZ09', expiry: '2025-04', qty: 8, mrp: 65, shelf: 'C07', added_at: new Date().toISOString() }
+    ];
+  }
+  
+  if (savedSales) {
+    sales = JSON.parse(savedSales);
+  } else {
+    sales = [];
+  }
+}
+
+async function testSupabaseConnection() {
+  try {
+    setSyncStatus('syncing', 'Testing...');
+    const res = await supabaseRequest('products?limit=1', {}, 5000);
+    if (res.ok) {
+      supabaseOnline = true;
+      setSyncStatus('online', 'Connected ✓');
+      updateSupabaseStatusDisplay();
+      showToast('✅ Supabase connected!', 'success');
+      
+      if (syncQueue.length > 0) {
+        showToast(`📤 Syncing ${syncQueue.length} offline changes...`, 'success');
+        await processSyncQueue();
+      }
+    } else {
+      throw new Error('Connection failed');
+    }
+  } catch (err) {
+    supabaseOnline = false;
+    setSyncStatus('offline', 'Offline');
+    updateSupabaseStatusDisplay();
+    showToast('❌ Cannot connect to Supabase', 'error');
+  }
+}
+
+function updateSupabaseStatusDisplay() {
+  const el = document.getElementById('supabaseStatus');
+  if (el) {
+    el.innerHTML = supabaseOnline 
+      ? '<div style="display:flex;align-items:center;gap:8px;"><div class="sync-dot online"></div><span>Connected to Supabase</span></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Data syncs automatically across devices.</div>'
+      : '<div style="display:flex;align-items:center;gap:8px;"><div class="sync-dot offline"></div><span>Working Offline</span></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Data saved locally. Will sync when connection returns.</div>';
+  }
+}
+
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  dot.className = 'sync-dot ' + (state === 'online' ? 'online' : state === 'syncing' ? 'syncing' : 'offline');
+  txt.textContent = text;
+}
+
+function setTodayDate() {
+  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const el = document.getElementById('todayDate');
+  if (el) el.textContent = today;
+  const histInput = document.getElementById('historyDate');
+  if (histInput) histInput.value = new Date().toISOString().split('T')[0];
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+function showPage(page) {
+  currentPage = page;
+  const pages = ['inventory','sales','history','expiry','shelf','reports','settings'];
+  pages.forEach(p => {
+    const el = document.getElementById('page-' + p);
+    if (el) el.style.display = p === page ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', pages[i] === page));
+  document.querySelectorAll('.mobile-nav-item').forEach((el, i) => el.classList.toggle('active', pages[i] === page));
+  
+  if (page === 'sales') loadTodaySales();
+  if (page === 'history') loadHistory();
+  if (page === 'expiry') renderExpiryPage();
+  if (page === 'shelf') renderShelfPage();
+  if (page === 'settings') {
+    const s = getSettings();
+    if (s.geminiKey) document.getElementById('geminiKeyInput').value = s.geminiKey;
+    updateSupabaseStatusDisplay();
+    updateQueueCount();
+  }
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+}
+
+function getExpiryStatus(expiryStr) {
+  if (!expiryStr) return { label: 'N/A', type: '', days: 999 };
+  const now = new Date();
+  const exp = new Date(expiryStr + '-01');
+  exp.setMonth(exp.getMonth() + 1);
+  const diffDays = Math.floor((exp - now) / 86400000);
+  if (diffDays < 0) return { label: 'Expired', type: 'danger', days: diffDays };
+  if (diffDays <= 30) return { label: `${diffDays}d`, type: 'danger', days: diffDays };
+  if (diffDays <= 60) return { label: `${diffDays}d`, type: 'warn', days: diffDays };
+  if (diffDays <= 90) return { label: `${diffDays}d`, type: 'cyan', days: diffDays };
+  return { label: 'Good', type: 'green', days: diffDays };
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ============================================
+// RENDER TABLE
+// ============================================
+function renderTable() {
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const catFilter = document.getElementById('filterCategory')?.value || '';
+  const expiryFilter = document.getElementById('filterExpiry')?.value || '';
+
+  let filtered = products.filter(p => {
+    const matchSearch = !search ||
+      (p.name || '').toLowerCase().includes(search) ||
+      (p.company || '').toLowerCase().includes(search) ||
+      (p.batch || '').toLowerCase().includes(search) ||
+      (p.shelf || '').toLowerCase().includes(search);
+    const matchCat = !catFilter || p.category === catFilter;
+    let matchExpiry = true;
+    if (expiryFilter) {
+      const s = getExpiryStatus(p.expiry);
+      if (expiryFilter === 'expired') matchExpiry = s.type === 'danger' && s.days < 0;
+      else matchExpiry = s.days >= 0 && s.days <= parseInt(expiryFilter);
+    }
+    return matchSearch && matchCat && matchExpiry;
+  });
+
+  const tbody = document.getElementById('productTableBody');
+  const empty = document.getElementById('emptyState');
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; updateStats(); return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(p => {
+    const s = getExpiryStatus(p.expiry);
+    return `<tr>
+      <td><div class="product-name">${escapeHtml(p.name)}</div><div class="product-company">${escapeHtml(p.company || '—')}</div></td>
+      <td><span class="badge badge-cyan">${escapeHtml(p.category || '—')}</span></td>
+      <td>${escapeHtml(p.batch || '—')}</td>
+      <td>${p.expiry ? p.expiry.replace('-','/') : '—'}</td>
+      <td style="font-weight:600;color:${p.qty < 10 ? 'var(--warn)' : p.qty === 0 ? 'var(--danger)' : 'var(--text)'}">${p.qty}</td>
+      <td>${p.shelf ? `<span class="shelf-tag">${escapeHtml(p.shelf)}</span>` : '—'}</td>
+      <td>₹${p.mrp || 0}</td>
+      <td><span class="badge badge-${s.type}">${s.label}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm btn-sell" onclick="openSellModal('${p.id}')">Sell</button>
+        <button class="btn btn-sm btn-secondary" onclick="editProduct('${p.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+  updateStats();
+}
+
+function updateStats() {
+  let expiring = 0, expired = 0, low = 0, value = 0;
+  products.forEach(p => {
+    const s = getExpiryStatus(p.expiry);
+    if (s.type === 'danger' && s.days < 0) expired++;
+    else if (s.days >= 0 && s.days <= 60) expiring++;
+    if (p.qty < 10) low++;
+    value += (p.mrp || 0) * (p.qty || 0);
+  });
+  document.getElementById('stat-total').textContent = products.length;
+  document.getElementById('stat-expiring').textContent = expiring;
+  document.getElementById('stat-expired').textContent = expired;
+  document.getElementById('stat-low').textContent = low;
+  document.getElementById('stat-value').textContent = '₹' + value.toLocaleString();
+}
+
+// ============================================
+// PRODUCT CRUD
+// ============================================
+function openAddModal() {
+  editingId = null;
+  document.getElementById('addModalTitle').textContent = '➕ Add Product';
+  ['name','company','batch','expiry','qty','mrp','purchase','shelf'].forEach(f => document.getElementById('f-' + f).value = '');
+  document.getElementById('f-category').value = 'Tablet';
+  document.getElementById('f-gst').value = '0';
+  document.getElementById('addModal').classList.add('open');
+}
+
+function editProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('addModalTitle').textContent = '✏️ Edit Product';
+  ['name','company','batch','expiry','qty','mrp','purchase','shelf'].forEach(f => document.getElementById('f-' + f).value = p[f] || '');
+  document.getElementById('f-category').value = p.category || 'Tablet';
+  document.getElementById('f-gst').value = p.gst || '0';
+  document.getElementById('addModal').classList.add('open');
+}
+
+async function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) return showToast('Product name required', 'error');
+
+  const product = {
+    id: editingId || Date.now().toString(),
+    name,
+    company: document.getElementById('f-company').value.trim(),
+    category: document.getElementById('f-category').value,
+    batch: document.getElementById('f-batch').value.trim(),
+    expiry: document.getElementById('f-expiry').value,
+    qty: parseInt(document.getElementById('f-qty').value) || 0,
+    mrp: parseFloat(document.getElementById('f-mrp').value) || 0,
+    purchase: parseFloat(document.getElementById('f-purchase').value) || 0,
+    shelf: document.getElementById('f-shelf').value.trim().toUpperCase(),
+    gst: document.getElementById('f-gst').value,
+    added_at: new Date().toISOString()
+  };
+
+  setSyncStatus(supabaseOnline ? 'syncing' : 'offline', supabaseOnline ? 'Saving...' : 'Saving locally...');
+  
+  try {
+    if (supabaseOnline) {
+      if (editingId) {
+        await supabaseRequest(`products?id=eq.${editingId}`, { method: 'PATCH', body: JSON.stringify(product) });
+        const idx = products.findIndex(x => x.id === editingId);
+        if (idx !== -1) products[idx] = product;
+      } else {
+        await supabaseRequest('products', { method: 'POST', body: JSON.stringify(product) });
+        products.unshift(product);
+      }
+      setSyncStatus('online', 'Synced ✓');
+    } else {
+      if (editingId) {
+        const idx = products.findIndex(x => x.id === editingId);
+        if (idx !== -1) products[idx] = product;
+        await queueForSync({ type: 'UPDATE_PRODUCT', data: product });
+      } else {
+        products.unshift(product);
+        await queueForSync({ type: 'ADD_PRODUCT', data: product });
+      }
+      setSyncStatus('offline', `${syncQueue.length} queued`);
+      showToast('📱 Saved offline - will sync when online', 'success');
+    }
+    
+    backupToLocal();
+    closeModal('addModal');
+    renderTable();
+    updateQueueCount();
+    showToast(editingId ? '✅ Product updated!' : '✅ Product added!', 'success');
+  } catch (err) {
+    console.error('Save error:', err);
+    if (editingId) {
+      const idx = products.findIndex(x => x.id === editingId);
+      if (idx !== -1) products[idx] = product;
+    } else {
+      products.unshift(product);
+    }
+    await queueForSync({ type: editingId ? 'UPDATE_PRODUCT' : 'ADD_PRODUCT', data: product });
+    backupToLocal();
+    closeModal('addModal');
+    renderTable();
+    updateQueueCount();
+    setSyncStatus('offline', 'Queued for sync');
+    showToast('📱 Queued for sync when online', 'success');
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  
+  try {
+    if (supabaseOnline) {
+      await supabaseRequest(`products?id=eq.${id}`, { method: 'DELETE' });
+    } else {
+      await queueForSync({ type: 'DELETE_PRODUCT', id });
+    }
+    products = products.filter(p => p.id !== id);
+    backupToLocal();
+    renderTable();
+    updateQueueCount();
+    showToast(supabaseOnline ? '🗑️ Product deleted' : '📱 Deleted - will sync when online', 'success');
+  } catch (err) {
+    products = products.filter(p => p.id !== id);
+    backupToLocal();
+    renderTable();
+    showToast('📱 Deleted locally', 'success');
+  }
+}
+
+// ============================================
+// SELL FEATURE
+// ============================================
+function openSellModal(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  sellingProduct = p;
+  document.getElementById('sell-name').textContent = p.name;
+  document.getElementById('sell-meta').textContent = `${p.company || ''} · ${p.category || ''} · Batch: ${p.batch || 'N/A'}`;
+  document.getElementById('sell-stock').textContent = p.qty;
+  document.getElementById('sell-qty').value = '';
+  document.getElementById('sell-price').value = p.mrp || '';
+  document.getElementById('sell-total').textContent = '₹' + (p.mrp || 0);
+  document.getElementById('sellModal').classList.add('open');
+}
+
+function updateSellTotal() {
+  const qty = parseInt(document.getElementById('sell-qty').value) || 0;
+  const price = parseFloat(document.getElementById('sell-price').value) || 0;
+  document.getElementById('sell-total').textContent = '₹' + (qty * price).toFixed(2);
+}
+
+async function confirmSell(withBill) {
+  const qty = parseInt(document.getElementById('sell-qty').value);
+  const price = parseFloat(document.getElementById('sell-price').value) || sellingProduct.mrp || 0;
+
+  if (!qty || qty <= 0) return showToast('Enter valid quantity', 'error');
+  if (qty > sellingProduct.qty) return showToast(`Only ${sellingProduct.qty} available`, 'error');
+
+  const total = qty * price;
+  const newQty = sellingProduct.qty - qty;
+
+  const sale = {
+    id: Date.now().toString(),
+    product_id: sellingProduct.id,
+    product_name: sellingProduct.name,
+    company: sellingProduct.company || '',
+    category: sellingProduct.category || '',
+    qty_sold: qty,
+    mrp: price,
+    total: total,
+    sold_at: new Date().toISOString()
+  };
+
+  try {
+    if (supabaseOnline) {
+      await supabaseRequest('sales', { method: 'POST', body: JSON.stringify(sale) });
+      await supabaseRequest(`products?id=eq.${sellingProduct.id}`, { method: 'PATCH', body: JSON.stringify({ qty: newQty }) });
+    } else {
+      await queueForSync({ type: 'ADD_SALE', data: sale });
+      await queueForSync({ type: 'UPDATE_PRODUCT', data: { id: sellingProduct.id, qty: newQty } });
+    }
+    
+    const idx = products.findIndex(x => x.id === sellingProduct.id);
+    if (idx !== -1) products[idx].qty = newQty;
+    sales.unshift(sale);
+    
+    backupToLocal();
+    closeModal('sellModal');
+    renderTable();
+    updateQueueCount();
+    
+    const msg = supabaseOnline ? `✅ Sold ${qty} units — ₹${total.toFixed(2)}` : `📱 Sale saved offline - will sync when online`;
+    showToast(msg, 'success');
+    
+    if (withBill) {
+      currentBill = { ...sale, customer: 'Walk-in Customer', date: new Date().toLocaleString() };
+      document.getElementById('billContent').innerHTML = `
+        <div style="text-align:center;"><h2 style="color:#0f1117;">Renuka Medical</h2><p>${currentBill.date}</p><hr></div>
+        <div style="color:#0f1117;"><strong>Product:</strong> ${escapeHtml(currentBill.product_name)}<br>
+        <strong>Company:</strong> ${escapeHtml(currentBill.company)}<br>
+        <strong>Quantity:</strong> ${currentBill.qty_sold}<br>
+        <strong>Price:</strong> ₹${currentBill.mrp}<br>
+        <strong>Total:</strong> ₹${currentBill.total.toFixed(2)}</div>
+        <div style="text-align:center;margin-top:16px;"><hr><p>Thank you!</p></div>`;
+      document.getElementById('billModal').classList.add('open');
+    }
+  } catch (err) {
+    console.error('Sell error:', err);
+    const idx = products.findIndex(x => x.id === sellingProduct.id);
+    if (idx !== -1) products[idx].qty = newQty;
+    sales.unshift(sale);
+    backupToLocal();
+    closeModal('sellModal');
+    renderTable();
+    showToast('📱 Sale saved locally', 'success');
+  }
+}
+
+function printBill() {
+  const w = window.open();
+  w.document.write('<html><head><title>Invoice</title><style>body{font-family:sans-serif;padding:20px;}</style></head><body>');
+  w.document.write(document.getElementById('billContent').innerHTML);
+  w.document.write('</body></html>');
+  w.document.close();
+  w.print();
+}
+
+function downloadBillPDF() {
+  html2pdf().from(document.getElementById('billContent')).save('invoice.pdf');
+}
+
+// ============================================
+// SALES
+// ============================================
+function loadTodaySales() {
+  const today = new Date().toISOString().split('T')[0];
+  const todaySales = sales.filter(s => s.sold_at.startsWith(today));
+  renderSalesLog(todaySales, 'todaySalesContent');
+  const revenue = todaySales.reduce((s, i) => s + (i.total || 0), 0);
+  const units = todaySales.reduce((s, i) => s + (i.qty_sold || 0), 0);
+  document.getElementById('today-count').textContent = todaySales.length;
+  document.getElementById('today-revenue').textContent = '₹' + revenue.toFixed(0);
+  document.getElementById('today-units').textContent = units;
+}
+
+function loadHistory() {
+  const date = document.getElementById('historyDate')?.value;
+  if (!date) return;
+  const daySales = sales.filter(s => s.sold_at.startsWith(date));
+  renderSalesLog(daySales, 'historyContent');
+  const revenue = daySales.reduce((s, i) => s + (i.total || 0), 0);
+  const units = daySales.reduce((s, i) => s + (i.qty_sold || 0), 0);
+  document.getElementById('historySummary').innerHTML = `
+    <div class="stat-card purple"><div class="stat-label">Transactions</div><div class="stat-value">${daySales.length}</div></div>
+    <div class="stat-card green"><div class="stat-label">Revenue</div><div class="stat-value">₹${revenue.toFixed(0)}</div></div>
+    <div class="stat-card cyan"><div class="stat-label">Units Sold</div><div class="stat-value">${units}</div></div>
+  `;
+}
+
+function renderSalesLog(salesList, containerId) {
+  const container = document.getElementById(containerId);
+  if (!salesList.length) {
+    container.innerHTML = '<div class="empty-state"><div class="e-icon">🛒</div><p>No sales recorded.</p></div>';
+    return;
+  }
+  container.innerHTML = salesList.map(s => {
+    const time = new Date(s.sold_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="sale-row">
+      <div><div class="sale-name">${escapeHtml(s.product_name)}</div>
+      <div class="sale-meta">${escapeHtml(s.company || '')} · ${s.qty_sold} × ₹${s.mrp} · ${time}</div></div>
+      <div class="sale-amount">₹${(s.total || 0).toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================
+// EXPIRY PAGE
+// ============================================
+function renderExpiryPage() {
+  const container = document.getElementById('expiryContent');
+  const expired = products.filter(p => getExpiryStatus(p.expiry).days < 0);
+  const soon30 = products.filter(p => { const s = getExpiryStatus(p.expiry); return s.days >= 0 && s.days <= 30; });
+  const soon60 = products.filter(p => { const s = getExpiryStatus(p.expiry); return s.days > 30 && s.days <= 60; });
+
+  const makeGroup = (title, items, cls) => {
+    if (!items.length) return '';
+    return `<div style="margin-bottom:24px;">
+      <div class="section-title" style="color:var(--${cls})">${title} (${items.length})</div>
+      <div class="alert-cards">${items.map(p => `
+        <div class="alert-card ${cls}">
+          <div class="alert-dot ${cls}"></div>
+          <div class="alert-info"><div class="alert-name">${escapeHtml(p.name)}</div>
+          <div class="alert-meta">${escapeHtml(p.company || '')} · Shelf ${escapeHtml(p.shelf || 'N/A')} · Qty: ${p.qty}</div></div>
+          <span class="badge badge-${cls}">${getExpiryStatus(p.expiry).label}</span>
+        </div>`).join('')}</div></div>`;
+  };
+
+  container.innerHTML = makeGroup('🔴 Expired', expired, 'danger') +
+    makeGroup('🟠 Expiring in 30 Days', soon30, 'warn') +
+    makeGroup('🟡 Expiring in 31–60 Days', soon60, 'warn') ||
+    '<div class="empty-state"><div class="e-icon">✅</div><p>All products within safe expiry range!</p></div>';
+}
+
+// ============================================
+// SHELF PAGE
+// ============================================
+function renderShelfPage() {
+  const container = document.getElementById('shelfContent');
+  const map = {};
+  products.forEach(p => { const s = p.shelf || 'Unassigned'; if (!map[s]) map[s] = []; map[s].push(p); });
+  const shelves = Object.keys(map).sort();
+  if (!shelves.length) { container.innerHTML = '<div class="empty-state"><div class="e-icon">🗄️</div><p>No products yet.</p></div>'; return; }
+  
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">` +
+    shelves.map(shelf => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="background:var(--surface2);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+          <span class="shelf-tag">${escapeHtml(shelf)}</span>
+          <span style="font-family:var(--font-head);font-weight:700;">Shelf ${escapeHtml(shelf)}</span>
+          <span style="margin-left:auto;font-size:12px;color:var(--muted);">${map[shelf].length} items</span>
+        </div>
+        <div style="padding:12px 16px;">
+          ${map[shelf].map(p => {
+            const s = getExpiryStatus(p.expiry);
+            return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(42,48,69,0.4);">
+              <div><div style="font-size:13px;font-weight:500;">${escapeHtml(p.name)}</div>
+              <div style="font-size:11px;color:var(--muted);">Qty: ${p.qty} · Exp: ${p.expiry || 'N/A'}</div></div>
+              <span class="badge badge-${s.type}">${s.label}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('') + '</div>';
+}
+
+// ============================================
+// EXPORT FUNCTIONS (Fixed PDF with white bg/black text)
+// ============================================
+function exportInventoryToExcel() {
+  const ws = XLSX.utils.json_to_sheet(products.map(p => ({
+    Name: p.name, Company: p.company || '', Category: p.category || '',
+    Batch: p.batch || '', Expiry: p.expiry || '', Quantity: p.qty,
+    Shelf: p.shelf || '', MRP: p.mrp || 0, Status: getExpiryStatus(p.expiry).label
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+  XLSX.writeFile(wb, `inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('📊 Exported to Excel', 'success');
+}
+
+function exportInventoryToPDF() {
+  const el = document.createElement('div');
+  el.className = 'pdf-export';
+  el.style.cssText = 'background:white !important; color:black !important; padding:20px; font-family:Arial,sans-serif;';
+  el.innerHTML = `
+    <h2 style="color:#0f1117 !important;">Renuka Medical - Inventory Report</h2>
+    <p style="color:#333 !important;">Generated: ${new Date().toLocaleString()}</p>
+    <table style="border-collapse:collapse;width:100%;margin-top:20px;border:1px solid #ddd;">
+      <thead>
+        <tr style="background:#f0f0f0 !important;">
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Name</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Company</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Batch</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Expiry</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Qty</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">Shelf</th>
+          <th style="padding:10px;text-align:left;border:1px solid #ddd;color:black !important;">MRP</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${products.map(p => `<tr>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${escapeHtml(p.name)}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${escapeHtml(p.company || '')}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${escapeHtml(p.batch || '')}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${p.expiry || ''}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${p.qty}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">${escapeHtml(p.shelf || '')}</td>
+          <td style="padding:8px;border:1px solid #ddd;color:black !important;">₹${p.mrp || 0}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  
+  html2pdf().from(el).set({
+    margin: 0.5,
+    filename: `inventory_${new Date().toISOString().split('T')[0]}.pdf`,
+    html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+  }).save();
+  showToast('📄 PDF generated', 'success');
+}
+
+function exportSalesToExcel() {
+  const today = new Date().toISOString().split('T')[0];
+  const todaySales = sales.filter(s => s.sold_at.startsWith(today));
+  const ws = XLSX.utils.json_to_sheet(todaySales.map(s => ({
+    Product: s.product_name, Company: s.company || '', Quantity: s.qty_sold,
+    Price: s.mrp, Total: s.total, Time: new Date(s.sold_at).toLocaleTimeString()
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sales');
+  XLSX.writeFile(wb, `sales_${today}.xlsx`);
+  showToast('📊 Sales exported', 'success');
+}
+
+function exportExpiryReport() {
+  const expiring = products.filter(p => { const s = getExpiryStatus(p.expiry); return s.days >= 0 && s.days <= 60; });
+  const ws = XLSX.utils.json_to_sheet(expiring.map(p => ({
+    Name: p.name, Company: p.company || '', Expiry: p.expiry,
+    DaysLeft: getExpiryStatus(p.expiry).days, Quantity: p.qty, Shelf: p.shelf || ''
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Expiring');
+  XLSX.writeFile(wb, 'expiry_report.xlsx');
+  showToast('📄 Expiry report exported', 'success');
+}
+
+function generateLowStockAlert() {
+  const low = products.filter(p => p.qty < 10);
+  alert(low.length ? `⚠️ Low Stock:\n\n${low.map(p => `${p.name}: ${p.qty} units (Shelf: ${p.shelf || 'N/A'})`).join('\n')}` : '✅ All products have sufficient stock.');
+}
+
+function sendLowStockEmail() {
+  const email = document.getElementById('alertEmail')?.value;
+  if (!email) return showToast('Enter email', 'error');
+  const low = products.filter(p => p.qty < 10);
+  if (!low.length) return showToast('No low stock items', 'success');
+  window.location.href = `mailto:${email}?subject=Low Stock Alert&body=${encodeURIComponent(low.map(p => `${p.name} - ${p.qty} units (Shelf: ${p.shelf || 'N/A'})`).join('\n'))}`;
+  showToast('📧 Opening email client', 'success');
+}
+
+function exportAllData() {
+  const blob = new Blob([JSON.stringify({ products, sales, syncQueue, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `renuka_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  showToast('💾 Backup downloaded', 'success');
+}
+
+async function clearAllData() {
+  if (!confirm('⚠️ Delete ALL products and sales? This cannot be undone!')) return;
+  if (!confirm('Final confirmation: Delete everything?')) return;
+  
+  try {
+    if (supabaseOnline) {
+      for (const p of products) await supabaseRequest(`products?id=eq.${p.id}`, { method: 'DELETE' });
+      for (const s of sales) await supabaseRequest(`sales?id=eq.${s.id}`, { method: 'DELETE' });
+    }
+    products = []; sales = [];
+    localStorage.removeItem('renuka_products_backup');
+    localStorage.removeItem('renuka_sales_backup');
+    renderTable();
+    showToast('🗑️ All data cleared', 'success');
+  } catch (err) {
+    products = []; sales = [];
+    renderTable();
+    showToast('📱 Cleared locally', 'success');
+  }
+}
+
+// ============================================
+// SETTINGS & AI
+// ============================================
+function getSettings() { return JSON.parse(localStorage.getItem('renuka_settings') || '{}'); }
+function saveSettings() {
+  localStorage.setItem('renuka_settings', JSON.stringify({ geminiKey: document.getElementById('geminiKeyInput').value.trim() }));
+  showToast('✅ Settings saved', 'success');
+}
+
+function openAiModal() {
+  aiImageBase64 = null; aiParsedProducts = [];
+  document.getElementById('aiImagePreview').style.display = 'none';
+  document.getElementById('aiResult').classList.remove('show');
+  document.getElementById('aiParsedList').style.display = 'none';
+  document.getElementById('aiScanBtn').style.display = 'none';
+  document.getElementById('aiAddBtn').style.display = 'none';
+  document.getElementById('aiProgress').classList.remove('show');
+  document.getElementById('aiKeyWarning').style.display = getSettings().geminiKey ? 'none' : 'flex';
+  document.getElementById('aiModal').classList.add('open');
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('aiDropZone').classList.add('dragging'); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('aiDropZone').classList.remove('dragging'); if (e.dataTransfer.files[0]) processImageFile(e.dataTransfer.files[0]); }
+function handleFileSelect(e) { if (e.target.files[0]) processImageFile(e.target.files[0]); }
+
+function processImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    aiImageBase64 = e.target.result.split(',')[1];
+    document.getElementById('aiPreviewImg').src = e.target.result;
+    document.getElementById('aiImagePreview').style.display = 'block';
+    document.getElementById('aiScanBtn').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runGeminiScan() {
+  const s = getSettings();
+  if (!s.geminiKey) return showToast('Set API key in Settings', 'error');
+  if (!aiImageBase64) return;
+  
+  document.getElementById('aiProgress').classList.add('show');
+  document.getElementById('aiScanBtn').disabled = true;
+  
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${s.geminiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'Extract medicine products as JSON array with: name, company, batch, expiry(YYYY-MM), qty, mrp.' }, { inline_data: { mime_type: 'image/jpeg', data: aiImageBase64 } }] }] })
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    document.getElementById('aiResultText').textContent = text;
+    document.getElementById('aiResult').classList.add('show');
+    
+    try { 
+      const clean = text.replace(/```json|```/g, '').trim();
+      aiParsedProducts = JSON.parse(clean);
+      if (!Array.isArray(aiParsedProducts)) aiParsedProducts = [aiParsedProducts];
+    } catch { aiParsedProducts = []; }
+    
+    const container = document.getElementById('aiParsedList');
+    if (aiParsedProducts.length) {
+      container.innerHTML = `<div>✅ ${aiParsedProducts.length} products:</div>` + aiParsedProducts.map((p, i) => `
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;">
+          <div><strong>${escapeHtml(p.name || '?')}</strong> · ${escapeHtml(p.company || '')}</div>
+          <input placeholder="Shelf" id="aiShelf_${i}" style="width:80px;padding:4px;margin-top:4px;" oninput="aiParsedProducts[${i}].shelf=this.value.toUpperCase()">
+        </div>`).join('');
+      container.style.display = 'block';
+      document.getElementById('aiAddBtn').style.display = 'flex';
+    } else {
+      container.innerHTML = '<p>No products detected</p>';
+      container.style.display = 'block';
+    }
+  } catch (err) {
+    showToast('Scan failed', 'error');
+  }
+  document.getElementById('aiProgress').classList.remove('show');
+  document.getElementById('aiScanBtn').disabled = false;
+}
+
+async function addAiProducts() {
+  if (!aiParsedProducts.length) return;
+  
+  const toInsert = aiParsedProducts.map(p => ({
+    id: Date.now().toString() + Math.random(),
+    name: p.name || 'Unknown', company: p.company || '', category: 'Tablet',
+    batch: p.batch || '', expiry: p.expiry || '', qty: parseInt(p.qty) || 0,
+    mrp: parseFloat(p.mrp) || 0, purchase: 0, shelf: (p.shelf || '').toUpperCase(),
+    gst: '0', added_at: new Date().toISOString()
+  }));
+  
+  try {
+    if (supabaseOnline) {
+      for (const p of toInsert) await supabaseRequest('products', { method: 'POST', body: JSON.stringify(p) });
+    } else {
+      for (const p of toInsert) await queueForSync({ type: 'ADD_PRODUCT', data: p });
+    }
+    products.unshift(...toInsert);
+    backupToLocal();
+    closeModal('aiModal');
+    renderTable();
+    updateQueueCount();
+    showToast(supabaseOnline ? `✅ Added ${toInsert.length} products` : `📱 ${toInsert.length} products queued for sync`, 'success');
+  } catch (err) {
+    products.unshift(...toInsert);
+    backupToLocal();
+    closeModal('aiModal');
+    renderTable();
+    showToast('📱 Saved locally', 'success');
+  }
+}
+
+// ============================================
+// START
+// ============================================
+init();
+</script>
+</body>
+</html>
